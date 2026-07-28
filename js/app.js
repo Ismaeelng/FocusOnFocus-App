@@ -1,5 +1,5 @@
 /* ==========================================================================
-   FocusOnFocus (FonF) - Main Application Bootstrap & Router
+   FocusOnFocus (FonF) - Main Application Router & Event Orchestrator
    ========================================================================== */
 
 import { store } from './store.js';
@@ -17,34 +17,28 @@ let activeLinkedTaskTitle = null;
 document.addEventListener('DOMContentLoaded', () => {
   const state = store.getState();
   
-  // Apply saved theme
   if (state.theme) {
     document.documentElement.setAttribute('data-theme', state.theme);
     updateThemeIcons(state.theme);
   }
 
-  // Bind top bar header streak counter & theme toggle
-  bindTopBar();
-
-  // Bind Bottom Navigation tabs
-  bindBottomNav();
-
-  // Render initial view
+  bindHeaderControls();
+  bindNavigation();
   renderCurrentView();
 
-  // Check permission onboarding on initial load
+  // Permission onboarding check
   const modalContainer = document.getElementById('modal-container');
   renderPermissionOnboarding(modalContainer, () => {
     renderCurrentView();
   });
 
-  // Real-time interval monitoring for app limits & schedule blocks
+  // Real-time interval check for app limits & debounced overlay
   setInterval(() => {
     const freezeSlot = document.getElementById('freeze-overlay-container');
     checkAndRenderFreezeOverlay(freezeSlot);
   }, 4000);
 
-  // Subscribe to store updates
+  // Subscribe to state updates
   store.subscribe((data) => {
     updateThemeIcons(data.theme);
     const streakVal = document.getElementById('streak-count-val');
@@ -52,7 +46,7 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 });
 
-function bindTopBar() {
+function bindHeaderControls() {
   const themeBtn = document.getElementById('theme-toggle');
   themeBtn?.addEventListener('click', () => {
     store.toggleTheme();
@@ -71,11 +65,19 @@ function updateThemeIcons(theme) {
   }
 }
 
-function bindBottomNav() {
-  const navTabs = document.querySelectorAll('.nav-tab');
-  navTabs.forEach(tab => {
+function bindNavigation() {
+  // Mobile bottom nav tabs
+  document.querySelectorAll('.nav-tab').forEach(tab => {
     tab.addEventListener('click', () => {
       const targetTab = tab.getAttribute('data-tab');
+      navigateToTab(targetTab);
+    });
+  });
+
+  // Desktop sidebar menu items
+  document.querySelectorAll('.sidebar-item').forEach(item => {
+    item.addEventListener('click', () => {
+      const targetTab = item.getAttribute('data-tab');
       navigateToTab(targetTab);
     });
   });
@@ -83,6 +85,8 @@ function bindBottomNav() {
 
 function navigateToTab(tabName) {
   currentTab = tabName;
+
+  // Update active state in bottom nav
   document.querySelectorAll('.nav-tab').forEach(tab => {
     if (tab.getAttribute('data-tab') === tabName) {
       tab.classList.add('active');
@@ -90,6 +94,16 @@ function navigateToTab(tabName) {
       tab.classList.remove('active');
     }
   });
+
+  // Update active state in sidebar
+  document.querySelectorAll('.sidebar-item').forEach(item => {
+    if (item.getAttribute('data-tab') === tabName) {
+      item.classList.add('active');
+    } else {
+      item.classList.remove('active');
+    }
+  });
+
   renderCurrentView();
 }
 

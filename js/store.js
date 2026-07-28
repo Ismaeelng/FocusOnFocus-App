@@ -2,9 +2,8 @@
    FocusOnFocus (FonF) - Data Store & LocalStorage Persistence
    ========================================================================== */
 
-const STORAGE_KEY = 'fonf_app_data_v1';
+const STORAGE_KEY = 'fonf_app_data_v2';
 
-// Initial Mock Data Generator
 const initialData = {
   theme: 'light',
   streakDays: 3,
@@ -25,6 +24,8 @@ const initialData = {
     soundEffects: true
   },
 
+  dismissedApps: {}, // appId -> timestamp dismissed
+
   apps: [
     {
       id: 'app_instagram',
@@ -33,7 +34,7 @@ const initialData = {
       icon: '📸',
       category: 'Social',
       minutesUsed: 42,
-      dailyLimitMinutes: 30, // Limit reached!
+      dailyLimitMinutes: 30, // Exceeded!
       history7Days: [25, 45, 30, 50, 20, 35, 42]
     },
     {
@@ -43,7 +44,7 @@ const initialData = {
       icon: '🎵',
       category: 'Social',
       minutesUsed: 28,
-      dailyLimitMinutes: 35, // 80% used
+      dailyLimitMinutes: 35,
       history7Days: [40, 50, 30, 20, 45, 60, 28]
     },
     {
@@ -51,17 +52,17 @@ const initialData = {
       packageName: 'com.google.android.youtube',
       name: 'YouTube',
       icon: '▶️',
-      category: 'Social',
-      minutesUsed: 15,
+      category: 'Entertainment',
+      minutesUsed: 25,
       dailyLimitMinutes: 45,
-      history7Days: [30, 20, 15, 40, 25, 30, 15]
+      history7Days: [30, 20, 15, 40, 25, 30, 25]
     },
     {
       id: 'app_pubg',
       packageName: 'com.tencent.ig',
       name: 'PUBG Mobile',
       icon: '🎮',
-      category: 'Games',
+      category: 'Entertainment',
       minutesUsed: 20,
       dailyLimitMinutes: 30,
       history7Days: [0, 45, 60, 15, 0, 30, 20]
@@ -69,12 +70,12 @@ const initialData = {
     {
       id: 'app_notion',
       packageName: 'com.notion.id',
-      name: 'Notion & Notes',
+      name: 'Notion & Docs',
       icon: '📝',
-      category: 'Productivity',
-      minutesUsed: 55,
+      category: 'Productive',
+      minutesUsed: 35,
       dailyLimitMinutes: 120,
-      history7Days: [30, 40, 60, 50, 45, 65, 55]
+      history7Days: [30, 40, 60, 50, 45, 65, 35]
     }
   ],
 
@@ -111,17 +112,6 @@ const initialData = {
       category: 'Personal',
       completed: true,
       recurring: 'daily'
-    },
-    {
-      id: 'task_4',
-      title: 'Draft Project Architecture Outline',
-      description: 'Prepare diagram for client call tomorrow.',
-      dueDate: new Date(Date.now() + 86400000).toISOString().split('T')[0],
-      dueTime: '10:00',
-      priority: 'high',
-      category: 'Work',
-      completed: false,
-      recurring: 'none'
     }
   ],
 
@@ -141,7 +131,7 @@ class AppStore {
         return JSON.parse(saved);
       }
     } catch (e) {
-      console.warn("Could not read LocalStorage, fallback to initial state", e);
+      console.warn("Could not read LocalStorage", e);
     }
     return JSON.parse(JSON.stringify(initialData));
   }
@@ -168,7 +158,6 @@ class AppStore {
     return this.data;
   }
 
-  // --- Actions --- //
   setTheme(theme) {
     this.data.theme = theme;
     document.documentElement.setAttribute('data-theme', theme);
@@ -205,19 +194,13 @@ class AppStore {
     this.save();
   }
 
-  updateTask(taskId, updates) {
-    const index = this.data.tasks.findIndex(t => t.id === taskId);
-    if (index !== -1) {
-      this.data.tasks[index] = { ...this.data.tasks[index], ...updates };
-      this.save();
-    }
-  }
-
   // App Usage & Limit Actions
   setAppLimit(appId, limitMinutes) {
     const app = this.data.apps.find(a => a.id === appId);
     if (app) {
       app.dailyLimitMinutes = limitMinutes;
+      // Reset dismiss state when limit changes
+      delete this.data.dismissedApps[appId];
       this.save();
     }
   }
@@ -226,11 +209,26 @@ class AppStore {
     const app = this.data.apps.find(a => a.id === appId);
     if (app) {
       app.dailyLimitMinutes += extraMinutes;
+      delete this.data.dismissedApps[appId];
       this.save();
     }
   }
 
-  // Permission onboarding
+  dismissAppLimitOverlay(appId) {
+    if (!this.data.dismissedApps) this.data.dismissedApps = {};
+    this.data.dismissedApps[appId] = Date.now();
+    this.save();
+  }
+
+  updateAppCategory(appId, category) {
+    const app = this.data.apps.find(a => a.id === appId);
+    if (app) {
+      app.category = category;
+      this.save();
+    }
+  }
+
+  // Permissions & Settings
   grantPermissions() {
     this.data.permissions.usageAccess = true;
     this.data.permissions.accessibility = true;
@@ -238,7 +236,6 @@ class AppStore {
     this.save();
   }
 
-  // Settings
   updateSettings(newSettings) {
     this.data.settings = { ...this.data.settings, ...newSettings };
     this.save();

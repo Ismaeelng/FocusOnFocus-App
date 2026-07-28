@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "python3 -m http.server 3000",
-    "build": "mkdir -p dist && cp -r index.html css js dist 2>/dev/null || true",
+    "build": "mkdir -p dist && cp -r index.html css js manifest.json sw.js images dist 2>/dev/null || true",
     "preview": "python3 -m http.server 3000"
   }
 }

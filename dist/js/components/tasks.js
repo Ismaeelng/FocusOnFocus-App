@@ -1,5 +1,5 @@
 /* ==========================================================================
-   FocusOnFocus (FonF) - Task Management View Component
+   FocusOnFocus (FonF) - Task Management View Component & FAB
    ========================================================================== */
 
 import { store } from '../store.js';
@@ -9,31 +9,30 @@ export function renderTasksView(container, onStartFocus) {
   const state = store.getState();
   const todayDate = new Date().toISOString().split('T')[0];
 
-  // Partition tasks into sections
   const todayTasks = state.tasks.filter(t => t.dueDate === todayDate && !t.completed);
   const upcomingTasks = state.tasks.filter(t => t.dueDate > todayDate && !t.completed);
   const completedTasks = state.tasks.filter(t => t.completed);
 
   container.innerHTML = `
     <!-- Top Action Row -->
-    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
       <div>
-        <h2 class="greeting-title" style="font-size: 1.3rem;">My Tasks</h2>
-        <p class="sub-text" style="margin-bottom: 0;">Organize your priorities with ease</p>
+        <h2 class="greeting-title" style="font-size: 1.4rem;">Tasks & Goals</h2>
+        <p class="sub-text" style="margin-bottom: 0;">Organize your custom goals and link them to focus sessions</p>
       </div>
-      <button class="btn-primary" id="btn-open-create-task" style="padding: 10px 18px; font-size: 0.88rem; display: flex; align-items: center; gap: 6px;">
-        <svg style="width:16px; height:16px;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+      <button class="btn-primary" id="btn-open-create-task" style="display: flex; align-items: center; gap: 6px;">
+        <svg style="width:18px; height:18px;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
         Add Task
       </button>
     </div>
 
     <!-- Section: Today -->
-    <details open class="card" style="padding: 16px;">
-      <summary style="font-family: var(--font-heading); font-weight: 700; font-size: 1rem; cursor: pointer; color: var(--text-primary); margin-bottom: 10px; user-select: none;">
+    <details open class="card">
+      <summary style="font-family: var(--font-heading); font-weight: 700; font-size: 1.05rem; cursor: pointer; color: var(--text-primary); margin-bottom: 12px; user-select: none;">
         Today (${todayTasks.length})
       </summary>
       ${todayTasks.length === 0 ? `
-        <div style="font-size: 0.85rem; color: var(--text-muted); padding: 8px 0;">No pending tasks for today. Enjoy your free time! 🌟</div>
+        <div style="font-size: 0.88rem; color: var(--text-muted); padding: 12px 0;">No pending tasks for today. Click "+ Add Task" to schedule your next goal! 🌟</div>
       ` : `
         <div class="task-list">
           ${todayTasks.map(task => renderTaskCard(task)).join('')}
@@ -42,12 +41,12 @@ export function renderTasksView(container, onStartFocus) {
     </details>
 
     <!-- Section: Upcoming -->
-    <details open class="card" style="padding: 16px;">
-      <summary style="font-family: var(--font-heading); font-weight: 700; font-size: 1rem; cursor: pointer; color: var(--text-primary); margin-bottom: 10px; user-select: none;">
+    <details open class="card">
+      <summary style="font-family: var(--font-heading); font-weight: 700; font-size: 1.05rem; cursor: pointer; color: var(--text-primary); margin-bottom: 12px; user-select: none;">
         Upcoming (${upcomingTasks.length})
       </summary>
       ${upcomingTasks.length === 0 ? `
-        <div style="font-size: 0.85rem; color: var(--text-muted); padding: 8px 0;">No upcoming tasks scheduled yet.</div>
+        <div style="font-size: 0.88rem; color: var(--text-muted); padding: 12px 0;">No upcoming tasks scheduled yet.</div>
       ` : `
         <div class="task-list">
           ${upcomingTasks.map(task => renderTaskCard(task)).join('')}
@@ -56,12 +55,12 @@ export function renderTasksView(container, onStartFocus) {
     </details>
 
     <!-- Section: Completed -->
-    <details class="card" style="padding: 16px;">
-      <summary style="font-family: var(--font-heading); font-weight: 700; font-size: 1rem; cursor: pointer; color: var(--text-secondary); margin-bottom: 10px; user-select: none;">
+    <details class="card">
+      <summary style="font-family: var(--font-heading); font-weight: 700; font-size: 1.05rem; cursor: pointer; color: var(--text-secondary); margin-bottom: 12px; user-select: none;">
         Completed (${completedTasks.length})
       </summary>
       ${completedTasks.length === 0 ? `
-        <div style="font-size: 0.85rem; color: var(--text-muted); padding: 8px 0;">No completed tasks yet today.</div>
+        <div style="font-size: 0.88rem; color: var(--text-muted); padding: 12px 0;">No completed tasks yet today.</div>
       ` : `
         <div class="task-list">
           ${completedTasks.map(task => renderTaskCard(task)).join('')}
@@ -69,11 +68,17 @@ export function renderTasksView(container, onStartFocus) {
       `}
     </details>
 
+    <!-- Floating Action Button (FAB) -->
+    <button class="fab-add-task" id="fab-add-task">
+      <svg style="width:20px; height:20px;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+      <span>New Task</span>
+    </button>
+
     <!-- Create Task Modal Slot -->
     <div id="create-task-modal-container"></div>
   `;
 
-  // Attach event listeners
+  // Attach event handlers
   container.querySelectorAll('.btn-toggle-task').forEach(btn => {
     btn.addEventListener('click', (e) => {
       e.stopPropagation();
@@ -101,11 +106,14 @@ export function renderTasksView(container, onStartFocus) {
     });
   });
 
-  container.querySelector('#btn-open-create-task')?.addEventListener('click', () => {
+  const openModalFn = () => {
     renderCreateTaskModal(container.querySelector('#create-task-modal-container'), () => {
       renderTasksView(container, onStartFocus);
     });
-  });
+  };
+
+  container.querySelector('#btn-open-create-task')?.addEventListener('click', openModalFn);
+  container.querySelector('#fab-add-task')?.addEventListener('click', openModalFn);
 }
 
 function renderTaskCard(task) {
@@ -117,23 +125,23 @@ function renderTaskCard(task) {
         </div>
         <div class="task-details">
           <div class="task-title">${task.title}</div>
-          ${task.description ? `<div style="font-size: 0.76rem; color: var(--text-muted); margin-top: 2px;">${task.description}</div>` : ''}
+          ${task.description ? `<div style="font-size: 0.78rem; color: var(--text-muted); margin-top: 2px;">${task.description}</div>` : ''}
           <div class="task-meta" style="margin-top: 4px;">
             <span class="priority-dot priority-${task.priority}"></span>
             <span style="text-transform: capitalize;">${task.priority} Priority</span>
             <span>• ${task.dueDate} ${task.dueTime ? `@ ${task.dueTime}` : ''}</span>
             <span class="tag-badge">${task.category}</span>
-            ${task.recurring !== 'none' ? `<span class="tag-badge" style="background: var(--accent-purple-light); color: var(--accent-purple);">🔁 ${task.recurring}</span>` : ''}
+            ${task.recurring !== 'none' ? `<span class="tag-badge" style="background: var(--accent-blue-light); color: var(--accent-blue-primary);">🔁 ${task.recurring}</span>` : ''}
           </div>
         </div>
       </div>
-      <div style="display: flex; items-center; gap: 6px;">
+      <div style="display: flex; align-items: center; gap: 6px;">
         ${!task.completed ? `
           <button class="focus-btn-sm btn-start-focus" data-task-title="${task.title}" title="Start Focus Session">
             <span>⚡ Focus</span>
           </button>
         ` : ''}
-        <button class="icon-btn btn-delete-task" data-task-id="${task.id}" style="width: 32px; height: 32px;" title="Delete Task">
+        <button class="icon-btn btn-delete-task" data-task-id="${task.id}" style="width: 34px; height: 34px;" title="Delete Task">
           <svg style="width: 14px; height: 14px; color: var(--accent-coral);" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
         </button>
       </div>
@@ -145,20 +153,20 @@ function renderCreateTaskModal(container, onClose) {
   const modalHTML = `
     <div class="modal-backdrop">
       <div class="modal-sheet">
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
-          <h3 class="section-title">Create New Task</h3>
-          <button class="icon-btn" id="btn-close-modal" style="width: 32px; height: 32px;">✕</button>
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+          <h3 class="section-title">Create Custom Task</h3>
+          <button class="icon-btn" id="btn-close-modal" style="width: 34px; height: 34px;">✕</button>
         </div>
         <form id="form-create-task">
           <div class="form-group">
             <label class="form-label">Task Title *</label>
-            <input type="text" id="task-input-title" class="input-text" placeholder="e.g. Study Discrete Math Ch. 3" required>
+            <input type="text" id="task-input-title" class="input-text" placeholder="e.g. Finish Architecture Slides" required>
           </div>
           <div class="form-group">
             <label class="form-label">Description (Optional)</label>
-            <input type="text" id="task-input-desc" class="input-text" placeholder="Add helpful details or notes...">
+            <input type="text" id="task-input-desc" class="input-text" placeholder="Add custom notes or instructions...">
           </div>
-          <div style="display: flex; gap: 10px;">
+          <div style="display: flex; gap: 12px;">
             <div class="form-group" style="flex: 1;">
               <label class="form-label">Due Date</label>
               <input type="date" id="task-input-date" class="input-text" value="${new Date().toISOString().split('T')[0]}">
@@ -168,7 +176,7 @@ function renderCreateTaskModal(container, onClose) {
               <input type="time" id="task-input-time" class="input-text" value="14:00">
             </div>
           </div>
-          <div style="display: flex; gap: 10px;">
+          <div style="display: flex; gap: 12px;">
             <div class="form-group" style="flex: 1;">
               <label class="form-label">Priority</label>
               <select id="task-input-priority" class="select-custom">
@@ -178,7 +186,7 @@ function renderCreateTaskModal(container, onClose) {
               </select>
             </div>
             <div class="form-group" style="flex: 1;">
-              <label class="form-label">Category / Tag</label>
+              <label class="form-label">Category</label>
               <select id="task-input-category" class="select-custom">
                 <option value="Study">Study</option>
                 <option value="Work">Work</option>
@@ -195,7 +203,7 @@ function renderCreateTaskModal(container, onClose) {
               <option value="weekly">Weekly</option>
             </select>
           </div>
-          <button type="submit" class="btn-primary" style="width: 100%; margin-top: 10px;">Save & Create Task</button>
+          <button type="submit" class="btn-primary" style="width: 100%; margin-top: 12px;">Save & Create Task</button>
         </form>
       </div>
     </div>
